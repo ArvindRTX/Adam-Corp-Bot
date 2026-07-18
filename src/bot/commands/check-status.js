@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ApplicationIntegrationType, InteractionContextType } from 'discord.js';
 import axios from 'axios';
-import config from '../../config.js';
+import config, { hasAllowedRole } from '../../config.js';
 import db from '../../database/db.js';
 
 // Format helper to convert ISO string to DD-MM-YYYY
@@ -44,9 +44,7 @@ export const checkStatusCommand = {
       let isStaffOrSales = false;
       try {
         const member = await interaction.guild?.members.fetch(interaction.user.id);
-        isStaffOrSales = member?.roles.cache.some(role =>
-          role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-        ) || interaction.guild?.ownerId === interaction.user.id || member?.permissions.has(PermissionFlagsBits.Administrator);
+        isStaffOrSales = hasAllowedRole(member) || interaction.guild?.ownerId === interaction.user.id || member?.permissions.has(PermissionFlagsBits.Administrator);
       } catch (e) {
         console.error('[Autocomplete Check Error] Failed to fetch member permissions:', e.message);
       }
@@ -159,9 +157,7 @@ export async function handleStatusVerification(interaction, txnId, isButton = fa
         let isStaff = false;
         try {
           const member = await interaction.guild.members.fetch(interaction.user.id);
-          isStaff = member.roles.cache.some(role =>
-            role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-          ) || interaction.guild.ownerId === interaction.user.id || member.permissions.has(PermissionFlagsBits.Administrator);
+          isStaff = hasAllowedRole(member) || interaction.guild.ownerId === interaction.user.id || member.permissions.has(PermissionFlagsBits.Administrator);
         } catch (e) {}
 
         if (isStaff) {

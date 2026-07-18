@@ -10,6 +10,7 @@ import {
   TextInputStyle,
   ActionRowBuilder 
 } from 'discord.js';
+import config, { hasAllowedRole } from '../../config.js';
 
 export const announceCommand = {
   data: new SlashCommandBuilder()
@@ -47,14 +48,12 @@ export const announceCommand = {
     let isStaffOrSales = false;
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
-      isStaffOrSales = member.roles.cache.some(role =>
-        role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-      );
+      isStaffOrSales = hasAllowedRole(member);
     } catch (e) {}
 
     if (!isOwner && !isAdmin && !isStaffOrSales) {
       return interaction.reply({
-        content: '❌ **Permission Denied**: This command is restricted to Owners, Administrators, or Staff members.',
+        content: '❌ **Permission Denied**: This command is restricted to Owners, Administrators, or authorized role members.',
         ephemeral: true
       });
     }
@@ -155,21 +154,19 @@ export async function handleAnnounceModal(interaction) {
       });
     }
 
-    // Permission Check: Owner, Admin, Staff, or Sales only
+    // Permission Check: Owner, Admin, or authorized roles only
     const isOwner = interaction.guild.ownerId === interaction.user.id;
     const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
 
     let isStaffOrSales = false;
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
-      isStaffOrSales = member.roles.cache.some(role =>
-        role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-      );
+      isStaffOrSales = hasAllowedRole(member);
     } catch (e) {}
 
     if (!isOwner && !isAdmin && !isStaffOrSales) {
       return interaction.editReply({
-        content: '❌ **Permission Denied**: This command is restricted to server Administrators or Staff only.'
+        content: '❌ **Permission Denied**: This command is restricted to server Administrators or authorized role members only.'
       });
     }
 

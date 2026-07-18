@@ -15,6 +15,9 @@ const config = {
     guildId: process.env.GUILD_ID,
     roleName: process.env.ROLE_NAME || 'Verified Customer',
     roleId: process.env.ROLE_ID || null,
+    allowedRoles: process.env.ALLOWED_ROLES 
+      ? process.env.ALLOWED_ROLES.split(',').map(r => r.trim()).filter(Boolean)
+      : ['Staff', 'Sales'],
   },
   upigateway: {
     key: process.env.UPIGATEWAY_KEY || process.env.UPIGateway_KEY,
@@ -67,6 +70,21 @@ if (missingConfig.length > 0) {
 
 if (config.isSandbox) {
   console.log('[Config INFO] UPIGateway key is missing or set to placeholder. Operating in SANDBOX/MOCK mode.');
+}
+
+/**
+ * Checks if a GuildMember has any of the configured allowed roles (by name or ID)
+ * @param {import('discord.js').GuildMember} member The member to check
+ * @returns {boolean} True if the member has an allowed role, false otherwise
+ */
+export function hasAllowedRole(member) {
+  if (!member || !member.roles || !member.roles.cache) return false;
+  const allowed = config.discord.allowedRoles;
+  return member.roles.cache.some(role => 
+    allowed.some(allowedRole => 
+      role.id === allowedRole || role.name.toLowerCase() === allowedRole.toLowerCase()
+    )
+  );
 }
 
 export default config;

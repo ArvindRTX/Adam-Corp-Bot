@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ApplicationIntegrationType, InteractionContextType } from 'discord.js';
 import db from '../../database/db.js';
+import config, { hasAllowedRole } from '../../config.js';
 
 export const moderateCommand = {
   data: new SlashCommandBuilder()
@@ -93,15 +94,13 @@ export const moderateCommand = {
     
     let isStaff = false;
     try {
-      isStaff = interaction.member.roles.cache.some(role =>
-        role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-      );
+      isStaff = hasAllowedRole(interaction.member);
     } catch (e) {}
 
-    // Allow Owner, Admin, and Staff/Sales to run moderation actions
+    // Allow Owner, Admin, and authorized roles to run moderation actions
     if (!isOwner && !isAdmin && !isStaff) {
       return interaction.reply({
-        content: '❌ **Permission Denied**: This command is restricted to Staff or Administrator roles.',
+        content: '❌ **Permission Denied**: This command is restricted to members with authorized roles or Administrator permissions.',
         ephemeral: true
       });
     }

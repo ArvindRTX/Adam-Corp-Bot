@@ -1,7 +1,7 @@
 import { handleStatusVerification } from '../commands/check-status.js';
 import { handleAnnounceModal } from '../commands/announce.js';
 import { PermissionFlagsBits } from 'discord.js';
-import config from '../../config.js';
+import config, { hasAllowedRole } from '../../config.js';
 
 export default {
   name: 'interactionCreate',
@@ -18,16 +18,14 @@ export default {
         return;
       }
 
-      // 2. Permission Check: Server Owner, Administrator, Staff, or Sales roles only
+      // 2. Permission Check: Server Owner, Administrator, or configured roles only
       const isOwner = interaction.guild?.ownerId === interaction.user.id;
       const isAdmin = interaction.member?.permissions.has(PermissionFlagsBits.Administrator);
 
       let isStaffOrSales = false;
       try {
         const member = await interaction.guild?.members.fetch(interaction.user.id);
-        isStaffOrSales = member?.roles.cache.some(role =>
-          role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-        );
+        isStaffOrSales = hasAllowedRole(member);
       } catch (err) {
         console.error('[Central Permission Check Error] Failed to fetch member roles:', err.message);
       }
@@ -35,7 +33,7 @@ export default {
       if (!isOwner && !isAdmin && !isStaffOrSales) {
         if (interaction.isChatInputCommand()) {
           await interaction.reply({
-            content: '❌ **Access Denied**: You are not authorized to use bot commands. Access is restricted to Owners, Administrators, and Staff/Sales members.',
+            content: '❌ **Access Denied**: You are not authorized to use bot commands. Access is restricted to Owners, Administrators, and authorized role members.',
             ephemeral: true
           });
         }

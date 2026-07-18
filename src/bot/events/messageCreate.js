@@ -1,5 +1,6 @@
 import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import db from '../../database/db.js';
+import { hasAllowedRole } from '../../config.js';
 
 // In-memory map to track user message timestamps: userId -> [timestamp1, timestamp2, ...]
 const spamTracker = new Map();
@@ -15,14 +16,12 @@ export default {
       const config = await db.getAntiRaidConfig();
       if (!config.enabled) return;
 
-      // Exempt Server Owner, Admins, and Staff/Sales roles from auto-moderation
+      // Exempt Server Owner, Admins, and authorized roles from auto-moderation
       const isOwner = message.guild.ownerId === message.author.id;
       const isAdmin = message.member?.permissions.has(PermissionFlagsBits.Administrator);
       let isStaff = false;
       try {
-        isStaff = message.member?.roles.cache.some(role =>
-          role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-        );
+        isStaff = hasAllowedRole(message.member);
       } catch (e) {}
 
       if (isOwner || isAdmin || isStaff) return;

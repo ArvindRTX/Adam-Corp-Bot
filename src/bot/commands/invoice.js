@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ApplicationIntegrationType, InteractionContextType } from 'discord.js';
 import axios from 'axios';
-import config from '../../config.js';
+import config, { hasAllowedRole } from '../../config.js';
 import db from '../../database/db.js';
 
 export const invoiceCommand = {
@@ -18,30 +18,23 @@ export const invoiceCommand = {
       option.setName('product')
         .setDescription('Select the product')
         .setRequired(true)
-        .addChoices(
-          { name: 'Internal Panel', value: 'Internal Panel' },
-          { name: 'Silent Aim Max', value: 'Silent Aim Max' },
-          { name: 'Location File', value: 'Location File' },
-          { name: 'CSR Paid Push', value: 'CSR Paid Push' },
-          { name: '1000 Protection', value: '1000 Protection' },
-          { name: 'Custom Amount', value: 'Custom Amount' }
-        )
+        .setAutocomplete(true)
     )
     .addStringOption(option =>
       option.setName('tier_or_duration')
-        .setDescription('Select the tier or duration (if applicable)')
-        .setRequired(false)
+        .setDescription('Select the product tier / duration')
+        .setRequired(true)
         .setAutocomplete(true)
     )
     .addIntegerOption(option =>
       option.setName('custom_price')
-        .setDescription('Enter custom price in INR (Only for Custom Amount product)')
+        .setDescription('Enter custom price in INR (Only applicable for Custom Amount product)')
         .setRequired(false)
         .setMinValue(1)
     ),
 
   async execute(interaction) {
-    // 1. Permission Check: Restrict to "Staff" or "Sales" role (Server Owner & Admins automatically bypass)
+    // 1. Permission Check: Restrict to authorized roles (Server Owner & Admins automatically bypass)
     const isOwner = interaction.guild.ownerId === interaction.user.id;
     const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
     
@@ -49,16 +42,14 @@ export const invoiceCommand = {
     try {
       // Fetch member directly to bypass caching issues (needed when GuildMembers intent is disabled)
       const member = await interaction.guild.members.fetch(interaction.user.id);
-      isStaffOrSales = member.roles.cache.some(role =>
-        role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-      );
+      isStaffOrSales = hasAllowedRole(member);
     } catch (fetchErr) {
       console.error('[Permission Check ERROR] Failed to fetch member roles:', fetchErr.message);
     }
 
     if (!isOwner && !isAdmin && !isStaffOrSales) {
       return interaction.reply({
-        content: '❌ **Permission Denied**: This command is restricted to Staff or Sales members only.',
+        content: '❌ **Permission Denied**: This command is restricted to members with authorized roles only.',
         ephemeral: true
       });
     }

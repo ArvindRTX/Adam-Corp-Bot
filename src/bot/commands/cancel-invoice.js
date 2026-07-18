@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ApplicationIntegrationType, InteractionContextType } from 'discord.js';
 import db from '../../database/db.js';
+import config, { hasAllowedRole } from '../../config.js';
 
 export const cancelInvoiceCommand = {
   data: new SlashCommandBuilder()
@@ -24,21 +25,19 @@ export const cancelInvoiceCommand = {
     ),
 
   async execute(interaction) {
-    // 1. Permission Check: Restrict to "Staff" or "Sales" role (Server Owner & Admins automatically bypass)
+    // 1. Permission Check: Restrict to authorized roles (Server Owner & Admins automatically bypass)
     const isOwner = interaction.guild.ownerId === interaction.user.id;
     const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
     
     let isStaffOrSales = false;
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
-      isStaffOrSales = member.roles.cache.some(role =>
-        role.name.toLowerCase() === 'staff' || role.name.toLowerCase() === 'sales'
-      );
+      isStaffOrSales = hasAllowedRole(member);
     } catch (e) {}
 
     if (!isOwner && !isAdmin && !isStaffOrSales) {
       return interaction.reply({
-        content: '❌ **Permission Denied**: This command is restricted to Staff or Sales members only.',
+        content: '❌ **Permission Denied**: This command is restricted to members with authorized roles only.',
         ephemeral: true
       });
     }
