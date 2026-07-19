@@ -26,6 +26,11 @@ export function startServer(client) {
     next();
   });
 
+  // Health check endpoint (for Render / pinger services)
+  app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Adam Corp Bot webhook server is running' });
+  });
+
   // Webhook listener endpoint
   app.post('/api/payment-webhook', async (req, res) => {
     try {
